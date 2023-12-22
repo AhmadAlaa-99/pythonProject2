@@ -4,6 +4,10 @@ import json
 import mysql.connector
 import bcrypt
 from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import hashes
 
 # Server class to handle multiple client connections and requests
 class Server:
@@ -12,6 +16,8 @@ class Server:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((host, port))
         self.server_socket.listen(5)
+        self.private_key, self.public_key = self.generate_keys()
+        # Add more attributes and methods for PGP encryption and session key management
         print(f"Server listening on {host}:{port}")
 
         # إعداد الاتصال بقاعدة البيانات MySQL
@@ -23,6 +29,14 @@ class Server:
         )
         self.cursor = self.db.cursor()
 
+    def generate_keys(self):
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+            backend=default_backend()
+        )
+        public_key = private_key.public_key()
+        return private_key, public_key
     def start(self):
         try:
             while True:
@@ -34,8 +48,26 @@ class Server:
         finally:
             self.server_socket.close()
 
+            def receive_client_public_key(self, client_socket):
+                client_public_key = client_socket.recv(1024)
+                return serialization.load_pem_public_key(
+                    client_public_key,
+                    backend=default_backend()
+                )
+
+            def send_public_key(self, client_socket):
+                public_key = self.public_key.public_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo
+                )
+                client_socket.send(public_key)
+
     def handle_client(self, client_socket):
         try:
+            client_public_key = self.receive_client_public_key(client_socket)
+            self.send_public_key(client_socket)
+            # ... [المزيد من الكود لتنفيذ الاتصال والتشفير] ...
+
             while True:
                 request = client_socket.recv(1024).decode()
                 if not request:

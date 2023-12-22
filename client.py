@@ -2,6 +2,12 @@ import socket
 import json
 import bcrypt
 from cryptography.fernet import Fernet
+########3#######
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import hashes
+########3#######
 # Client class to connect to the server and send requests
 class Client:
 
@@ -13,6 +19,16 @@ class Client:
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((host, port))
         self.is_logged_in = False
+        self.private_key, self.public_key = self.generate_keys()
+
+        def generate_keys(self):
+            private_key = rsa.generate_private_key(
+                public_exponent=65537,
+                key_size=2048,
+                backend=default_backend()
+            )
+            public_key = private_key.public_key()
+            return private_key, public_key
 
     def hash_password(self, password):
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
@@ -44,12 +60,56 @@ class Client:
         response = self.client_socket.recv(1024).decode()
         return response
 
+            #step3
+    def send_public_key(self):
+        public_key = self.public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        self.client_socket.send(public_key)
+
+    # step3
+    def receive_server_public_key(self):
+        server_public_key = self.client_socket.recv(1024)
+        return serialization.load_pem_public_key(
+            server_public_key,
+            backend=default_backend()
+        )
+
+    # step3
+    def encrypt_with_public_key(self, message, public_key):
+        encrypted = public_key.encrypt(
+            message,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        return encrypted
+
+    # step3
+    def decrypt_with_private_key(self, encrypted_message):
+        decrypted = self.private_key.decrypt(
+            encrypted_message,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        return decrypted
+
+
+
     def close(self):
         self.client_socket.close()
 
 # Example usage of the client
 client = Client("127.0.0.1", 5555)
-
+#step3
+client.send_public_key()
+server_public_key = client.receive_server_public_key()
 # Example of sending a register request
 register_response = client.send_request("register", "user1", "password123")
 print("Register response:", register_response)
