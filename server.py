@@ -17,8 +17,10 @@ class Server:
         self.server_socket.bind((host, port))
         self.server_socket.listen(5)
         self.private_key, self.public_key = self.generate_keys()
+
         # Add more attributes and methods for PGP encryption and session key management
         print(f"Server listening on {host}:{port}")
+
 
         # إعداد الاتصال بقاعدة البيانات MySQL
         self.db = mysql.connector.connect(
@@ -122,5 +124,13 @@ class Server:
         else:
             return json.dumps({"status": "error", "message": "Invalid username or password"})
 # Start the server
-server = Server("127.0.0.1", 5555)
+# إعدادات تكوين قاعدة البيانات
+# SQLALCHEMY_DATABASE_URI = 'mysql://root:@localhost/is'
+# SQLALCHEMY_TRACK_MODIFICATIONS = False
+#mysql://username:password@host:port/database
+
+#def __init__(self, host, port, db_host, db_user, db_password, db_name):
+
+# Start the server with all required parameters
+server = Server("127.0.0.1", 4000, db_host='localhost', db_user='root', db_password='', db_name='is')
 server.start()
