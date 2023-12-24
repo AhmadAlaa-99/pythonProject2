@@ -94,8 +94,36 @@ class Client:
         )
         return decrypted
 
+#وظيفة في العميل للتحقق من التوقيع الذي يتلقاه من السيرفر. هذا يضمن أن البيانات لم يتم
+    # تعديلها أثناء النقل وأنها صادرة فعلاً من السيرفر.
+    def verify_signature(self, public_key, signature, data):
+        try:
+            public_key.verify(
+                signature,
+                data,
+                padding.PSS(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            return True
+        except:
+            return False
+
+        def handle_response(self, response):
+            response_json = json.loads(response)
+            data = response_json["data"]
+            signature = bytes.fromhex(response_json["signature"])
+            is_valid = self.verify_signature(server_public_key, signature, data.encode())
+            if is_valid:
+                print("Data is valid and verified.")
+            else:
+                print("Data verification failed.")
+
     def close(self):
         self.client_socket.close()
+
 
 
 client = Client("127.0.0.1", 5555)

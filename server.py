@@ -98,12 +98,19 @@ class Server:
         request_data = json.loads(request)
         if request_data["type"] == "register":
             return self.register_user(request_data["username"], request_data["password"])
+
         elif request_data["type"] == "login":
             return self.login_user(request_data["username"], request_data["password"])
         elif request_data["type"] == "update_info":
             return self.update_client_info(request_data["username"], request_data["info"])
         else:
             return json.dumps({"status": "error", "message": "Invalid request type"})
+        #تطبيق عملية التوقيع والتحقق في عملية الاتصال بين العميل والسيرفر.
+        # على سبيل المثال، عندما يرسل السيرفر بيانات إلى العميل،
+        # يجب أن يقوم بتوقيع هذه البيانات وإرسال التوقيع معها.
+        # وعندما يتلقى العميل هذه البيانات، يجب عليه التحقق من التوقيع باستخدام المفتاح العام للسيرفر.
+        #signature = self.sign_data(response_data.encode())
+       # return json.dumps({"data": response_data, "signature": signature.hex()})
 
     def register_user(self, username, password):
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
@@ -123,6 +130,19 @@ class Server:
             return json.dumps({"status": "success", "message": "Login successful"})
         else:
             return json.dumps({"status": "error", "message": "Invalid username or password"})
+
+
+#وظيفة لتوقيع البيانات في السيرفر. هذا يتضمن استخدام المفتاح الخاص للسيرفر لتوقيع البيانات قبل إرسالها إلى العميل.
+        def sign_data(self, data):
+            signature = self.private_key.sign(
+                data,
+                padding.PSS(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            return signature
 # Start the server
 # Start the server with all required parameters
 server = Server("127.0.0.1", 5000, db_host='localhost', db_user='root', db_password='', db_name='is')
