@@ -30,6 +30,7 @@ class Client:
     def hash_password(self, password):
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
+
     def send_request(self, request_type, username, password):
         hashed_password = self.hash_password(password)
         request_data = json.dumps({
@@ -46,7 +47,7 @@ class Client:
         return Client.cipher_suite.encrypt(data.encode()).decode()
 
     def send_update_info_request(self, username, info):
-        encrypted_info = encrypt_data(json.dumps(info))
+        encrypted_info = self.encrypt_data(json.dumps(info))
         request_data = json.dumps({
             "type": "update_info",
             "username": username,
@@ -95,8 +96,6 @@ class Client:
 
     def close(self):
         self.client_socket.close()
-
-
 
 
 client = Client("127.0.0.1", 5555)

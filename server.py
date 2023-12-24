@@ -18,6 +18,7 @@ class Server:
         self.server_socket.listen(5)
         self.private_key, self.public_key = self.generate_keys()
 
+
         # Add more attributes and methods for PGP encryption and session key management
         print(f"Server listening on {host}:{port}")
 
@@ -82,10 +83,10 @@ class Server:
 
     encryption_key = Fernet.generate_key()
     cipher_suite = Fernet(encryption_key)
-    def decrypt_data(data):
+    def decrypt_data(data, cipher_suite=None):
         return cipher_suite.decrypt(data.encode()).decode()
     def update_client_info(self, username, info):
-        encrypted_info = decrypt_data(json.dumps(info))
+        encrypted_info = self.decrypt_data(json.dumps(info))
         try:
             self.cursor.execute("UPDATE InformationClient SET info = %s WHERE username = %s",
                                 (encrypted_info, username))
